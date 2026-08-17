@@ -35,7 +35,7 @@
           margin: auto;
           transform: translate(-18%, 0);
         "
-        src="/demo/2.png"
+        :src="baseUrl + 'demo/2.png'"
         alt="favicon"
         class="favicon"
         @click="testdemo"
@@ -81,7 +81,7 @@
       v-show="imgLoaded"
       target="_blank"
     >
-      <img src="/gh.png" alt="github" class="github" />
+      <img :src="baseUrl + 'gh.png'" alt="github" class="github" />
     </a>
     <div class="floating-menu" :style="menu_style" @mousedown.stop>
       <div>
@@ -386,6 +386,9 @@ export default {
     },
   },
   computed: {
+    baseUrl() {
+      return import.meta.env.BASE_URL;
+    },
     menu_style() {
       if (this.imgLoaded) {
         if (this.isProcessing || this.isDone) {
@@ -798,6 +801,16 @@ export default {
       this.isProcessing = true;
       let worker = this.worker;
       let start = Date.now();
+
+      // 用页面当前地址算出模型绝对 URL（避免 Worker 内相对路径解析错误）
+      let model_path;
+      if (this.model_type === "realesrgan") {
+        model_path = `models/${this.model}-${this.tile_size}/model.json`;
+      } else {
+        model_path = `models/realcugan/${this.factor}x-${this.denoise}-${this.tile_size}/model.json`;
+      }
+      const model_url = new URL(model_path, window.location.href).href;
+
       worker.addEventListener("message", (e) => {
         const { progress, done, output, alertmsg, info } = e.data;
         if (info) {
@@ -832,6 +845,7 @@ export default {
                 width: this.inputAlpha.width,
                 height: this.inputAlpha.height,
                 model: this.model,
+                model_url: model_url,
                 backend: this.backend,
                 hasAlpha: true,
               },
@@ -908,6 +922,7 @@ export default {
           width: this.input.width,
           height: this.input.height,
           model: this.model,
+          model_url: model_url,
           backend: this.backend,
           hasAlpha: false,
         },

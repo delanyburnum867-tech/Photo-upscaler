@@ -8,13 +8,31 @@ self.addEventListener("message", async (e) => {
   const BASE = import.meta.env.BASE_URL || "/";
   let model_url;
   let model_name;
-  if (data?.model_type === "realesrgan") {
+  if (data?.model_url) {
+    model_url = data.model_url;
+  } else if (data?.model_type === "realesrgan") {
     model_url = `${BASE}models/${data?.model}-${data?.tile_size}/model.json`;
-    model_name = `realesrgan-${data?.model}-${data?.tile_size}`;
   } else {
     model_url = `${BASE}models/realcugan/${data?.factor}x-${data?.denoise}-${data?.tile_size}/model.json`;
+  }
+  if (data?.model_type === "realesrgan") {
+    model_name = `realesrgan-${data?.model}-${data?.tile_size}`;
+  } else {
     model_name = `realcugan-${data?.factor}x-${data?.denoise}-${data?.tile_size}`;
   }
+
+  const loadWithTimeout = (loader, timeoutMs = 120000) => {
+    return Promise.race([
+      loader(),
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`Model loading timed out after ${timeoutMs / 1000}s`)),
+          timeoutMs
+        )
+      ),
+    ]);
+  };
+
   if (!(await tf.setBackend(data?.backend || "webgl"))) {
     postMessage({
       alertmsg: `${data?.backend} is not supported in your browser.`,
@@ -23,18 +41,24 @@ self.addEventListener("message", async (e) => {
   }
   let model;
   try {
-    model = await tf.loadGraphModel(`indexeddb://${model_name}`);
+    model = await loadWithTimeout(() => tf.loadGraphModel(`indexeddb://${model_name}`));
     console.log("Model loaded successfully");
     self.postMessage({ info: "Loaded from cache" });
   } catch (error) {
     self.postMessage({ info: "Downloading model" });
-    model = await (async () => {
-      const fetchedModel = await tf.loadGraphModel(model_url);
+    try {
+      const fetchedModel = await loadWithTimeout(() => tf.loadGraphModel(model_url));
       await fetchedModel.save(`indexeddb://${model_name}`);
-      return fetchedModel;
-    })();
+      model = fetchedModel;
+    } catch (downloadError) {
+      self.postMessage({
+        alertmsg: `Failed to load model: ${downloadError.message}\nModel URL: ${model_url}`,
+      });
+      return;
+    }
   }
   if (!model) {
+    self.postMessage({ alertmsg: "Model is undefined after loading." });
     return;
   }
   const input = new Img(data.width, data.height, new Uint8Array(data.input));
@@ -229,7 +253,8 @@ self.addEventListener("message", async (e) => {
       min_lap
     );
   } catch (e) {
-    postMessage({ alertmsg: e.toString() });
+    postMessage({ alertmsg: `Upscaling failed: ${e.toString()}` });
+    return;
   }
   if (withPadding) {
     output.cropToOriginalSize(width_ori * factor, height_ori * factor);
