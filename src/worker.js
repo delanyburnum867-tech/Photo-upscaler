@@ -5,13 +5,14 @@ import upscale from "./upscale";
 
 self.addEventListener("message", async (e) => {
   const { data } = e;
+  const BASE = import.meta.env.BASE_URL || "/";
   let model_url;
   let model_name;
   if (data?.model_type === "realesrgan") {
-    model_url = `/realesrgan/${data?.model}-${data?.tile_size}/model.json`;
+    model_url = `${BASE}models/${data?.model}-${data?.tile_size}/model.json`;
     model_name = `realesrgan-${data?.model}-${data?.tile_size}`;
   } else {
-    model_url = `/realcugan/${data?.factor}x-${data?.denoise}-${data?.tile_size}/model.json`;
+    model_url = `${BASE}models/realcugan/${data?.factor}x-${data?.denoise}-${data?.tile_size}/model.json`;
     model_name = `realcugan-${data?.factor}x-${data?.denoise}-${data?.tile_size}`;
   }
   if (!(await tf.setBackend(data?.backend || "webgl"))) {

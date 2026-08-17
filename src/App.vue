@@ -95,7 +95,6 @@
           <span class="description">Type</span>
           <select v-model="model_type">
             <option value="realesrgan">Real-ESRGAN</option>
-            <option value="realcugan">Real-CUGAN</option>
           </select>
         </div>
         <div v-if="model_type === 'realesrgan'">
@@ -310,12 +309,12 @@ export default {
       isProcessing: false,
       isDone: false,
       progress: 0,
-      model_type: "realcugan",
+      model_type: "realesrgan",
       model_config: {
         realesrgan: {
           model: ["anime_fast", "anime_plus", "general_fast", "general_plus"],
           factor: [4],
-          tile_size: [32, 48, 64, 96, 128, 192, 256],
+          tile_size: [64],
         },
         realcugan: {
           // factor: [2, 3, 4],
@@ -416,7 +415,7 @@ export default {
     },
   },
   mounted() {
-    this.model_type = localStorage.getItem("model_type") || "realcugan";
+    this.model_type = localStorage.getItem("model_type") || "realesrgan";
     this.model = localStorage.getItem("model") || "anime_plus";
     this.factor = Number(localStorage.getItem("factor")) || 4;
     this.denoise = localStorage.getItem("denoise") || "conservative";
