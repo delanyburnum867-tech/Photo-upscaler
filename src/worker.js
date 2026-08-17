@@ -35,7 +35,7 @@ self.addEventListener("message", async (e) => {
 
   if (!(await tf.setBackend(data?.backend || "webgl"))) {
     postMessage({
-      alertmsg: `${data?.backend} is not supported in your browser.`,
+      alertmsg: `你的浏览器不支持 ${data?.backend} 后端。`,
     });
     return;
   }
@@ -43,22 +43,22 @@ self.addEventListener("message", async (e) => {
   try {
     model = await loadWithTimeout(() => tf.loadGraphModel(`indexeddb://${model_name}`));
     console.log("Model loaded successfully");
-    self.postMessage({ info: "Loaded from cache" });
+    self.postMessage({ info: "已从缓存加载模型" });
   } catch (error) {
-    self.postMessage({ info: "Downloading model" });
+    self.postMessage({ info: "正在下载模型…" });
     try {
       const fetchedModel = await loadWithTimeout(() => tf.loadGraphModel(model_url));
       await fetchedModel.save(`indexeddb://${model_name}`);
       model = fetchedModel;
     } catch (downloadError) {
       self.postMessage({
-        alertmsg: `Failed to load model: ${downloadError.message}\nModel URL: ${model_url}`,
+        alertmsg: `加载模型失败：${downloadError.message}\n模型地址：${model_url}`,
       });
       return;
     }
   }
   if (!model) {
-    self.postMessage({ alertmsg: "Model is undefined after loading." });
+    self.postMessage({ alertmsg: "模型加载后为空，请重试。" });
     return;
   }
   const input = new Img(data.width, data.height, new Uint8Array(data.input));
@@ -74,13 +74,13 @@ self.addEventListener("message", async (e) => {
     if (hasAlpha) {
       self.postMessage({
         progress: progress,
-        info: `Processing Alpha ${progress.toFixed(2)}%`,
+        info: `处理透明通道 ${progress.toFixed(2)}%`,
       });
       return;
     }
     self.postMessage({
       progress: progress,
-      info: `Processing ${progress.toFixed(2)}%`,
+      info: `处理中 ${progress.toFixed(2)}%`,
     });
   }
   async function enlargeImageWithFixedInput(
@@ -253,7 +253,7 @@ self.addEventListener("message", async (e) => {
       min_lap
     );
   } catch (e) {
-    postMessage({ alertmsg: `Upscaling failed: ${e.toString()}` });
+    postMessage({ alertmsg: `放大处理失败：${e.toString()}` });
     return;
   }
   if (withPadding) {
@@ -264,14 +264,14 @@ self.addEventListener("message", async (e) => {
   await new Promise((resolve) => setTimeout(resolve, 10));
   postMessage({
     progress: 100,
-    info: `Processing image...`,
+    info: `正在处理图片…`,
   });
   postMessage(
     {
       progress: 100,
       done: true,
       output: output.data.buffer,
-      info: `Processing image...`,
+      info: `正在处理图片…`,
     },
     [output.data.buffer]
   );

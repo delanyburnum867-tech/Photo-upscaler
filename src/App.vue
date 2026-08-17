@@ -27,7 +27,7 @@
     @touchend="touchEnd"
   >
     <div v-if="!imgLoaded && !isDragOver" class="title">
-      <div>SuperResolution in Your Browser</div>
+      <div>浏览器端 AI 图片超分辨率</div>
       <img
         style="
           width: 50px;
@@ -60,7 +60,7 @@
         </svg>
       </div>
     </button>
-    <button v-show="imgLoaded" class="goback" @click="reloadPage">
+    <button v-show="imgLoaded" class="goback" @click="reloadPage" title="返回 / 换一张图片">
       <svg width="24" height="24" viewBox="0 0 1024 1024">
         <g
           fill="rgba(255, 255, 255, 1)"
@@ -92,38 +92,35 @@
       </div>
       <div class="opt" v-if="!isProcessing && !isDone">
         <div>
-          <span class="description">Type</span>
+          <span class="description">模型类型</span>
           <select v-model="model_type">
-            <option value="realesrgan">Real-ESRGAN</option>
+            <option value="realesrgan">超分辨率模型</option>
           </select>
         </div>
         <div v-if="model_type === 'realesrgan'">
           <div>
-            <span class="description">Model</span>
+            <span class="description">模型</span>
             <select v-model="model">
-              <option
-                v-for="modelOption in model_config.realesrgan.model"
-                :key="modelOption"
-                :value="modelOption"
-              >
-                {{ modelOption }}
-              </option>
+              <option value="anime_fast">动漫图 · 快速</option>
+              <option value="anime_plus">动漫图 · 高清</option>
+              <option value="general_fast">照片 · 快速</option>
+              <option value="general_plus">照片 · 高清</option>
             </select>
           </div>
           <div>
-            <span class="description">Scale</span>
+            <span class="description">放大倍数</span>
             <select v-model="factor">
               <option
                 v-for="factorOption in model_config.realesrgan.factor"
                 :key="factorOption"
                 :value="factorOption"
               >
-                {{ factorOption }}
+                {{ factorOption }} 倍
               </option>
             </select>
           </div>
           <div>
-            <span class="description">Tile Size</span>
+            <span class="description">分块大小</span>
             <select v-model="tile_size">
               <option
                 v-for="tileSizeOption in model_config.realesrgan.tile_size"
@@ -137,7 +134,7 @@
         </div>
         <div v-else-if="model_type === 'realcugan'">
           <div>
-            <span class="description">Denoise</span>
+            <span class="description">降噪强度</span>
             <select v-model="denoise">
               <option
                 v-for="denoiseOption in model_config.realcugan.denoise[factor]"
@@ -149,19 +146,19 @@
             </select>
           </div>
           <div>
-            <span class="description">Scale</span>
+            <span class="description">放大倍数</span>
             <select v-model="factor">
               <option
                 v-for="factorOption in model_config.realcugan.factor"
                 :key="factorOption"
                 :value="factorOption"
               >
-                {{ factorOption }}
+                {{ factorOption }} 倍
               </option>
             </select>
           </div>
           <div>
-            <span class="description">Tile Size</span>
+            <span class="description">分块大小</span>
             <select v-model="tile_size">
               <option
                 v-for="tileSizeOption in model_config.realcugan.tile_size"
@@ -174,7 +171,7 @@
           </div>
         </div>
         <div>
-          <span class="description">Overlap</span>
+          <span class="description">重叠区域</span>
           <select v-model="min_lap">
             <option>0</option>
             <option>4</option>
@@ -185,10 +182,10 @@
           </select>
         </div>
         <div>
-          <span class="description">Run on</span>
+          <span class="description">运行后端</span>
           <select v-model="backend">
-            <option value="webgl">WebGL</option>
-            <option value="webgpu">WebGPU</option>
+            <option value="webgl">图形加速 (WebGL)</option>
+            <option value="webgpu">图形加速 (WebGPU)</option>
           </select>
         </div>
       </div>
@@ -217,18 +214,24 @@
           class="run-button"
           v-if="!isProcessing && !isDone"
           @click="startTask"
+          title="开始处理"
         >
           <svg viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" fill="rgba(255, 255, 255, 1)"></path>
           </svg>
         </button>
       </div>
-      <button class="save-button" v-if="isDone" @click="saveImage">
+      <button class="save-button" v-if="isDone" @click="saveImage" title="保存图片">
         <svg width="22" viewBox="0 -4 23.9 30">
           <path
             fill="#fff"
             d="M6.6 2.7h-4v13.2h2.7A2.7 2.7 0 018 18.6a2.7 2.7 0 002.6 2.6h2.7a2.7 2.7 0 002.6-2.6 2.7 2.7 0 012.7-2.7h2.6V2.7h-4a1.3 1.3 0 110-2.7h4A2.7 2.7 0 0124 2.7v18.5a2.7 2.7 0 01-2.7 2.7H2.7A2.7 2.7 0 010 21.2V2.7A2.7 2.7 0 012.7 0h4a1.3 1.3 0 010 2.7zm4 7.4V1.3a1.3 1.3 0 112.7 0v8.8L15 8.4a1.3 1.3 0 011.9 1.8l-4 4a1.3 1.3 0 01-1.9 0l-4-4A1.3 1.3 0 019 8.4z"
           ></path>
+        </svg>
+      </button>
+      <button class="reset-button" v-if="isDone" @click="resetProcessing" title="用当前图片重新处理">
+        <svg width="22" viewBox="0 0 24 24">
+          <path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 13c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 8.74A7.93 7.93 0 004 13c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" fill="#fff"/>
         </svg>
       </button>
     </div>
@@ -260,12 +263,12 @@
         ></path>
       </svg>
       <div class="demo">
-        <div>No ideas? Try one of these:</div>
+        <div>没灵感？点下面的示例图片试试 ↓</div>
         <br />
         <div>
-          <img class="demoimg" src="/demo/1.jpg" alt="demo" @click="testdemo" />
-          <img class="demoimg" src="/demo/2.jpg" alt="demo" @click="testdemo" />
-          <img class="demoimg" src="/demo/3.jpg" alt="demo" @click="testdemo" />
+          <img class="demoimg" :src="baseUrl + 'demo/1.jpg'" alt="示例" @click="testdemo" />
+          <img class="demoimg" :src="baseUrl + 'demo/2.jpg'" alt="示例" @click="testdemo" />
+          <img class="demoimg" :src="baseUrl + 'demo/3.jpg'" alt="示例" @click="testdemo" />
         </div>
       </div>
     </div>
@@ -305,6 +308,9 @@ export default {
       imgLoaded: false,
       input: null,
       output: null,
+      originalInputData: null,
+      originalInputAlphaData: null,
+      originalHasAlpha: false,
       isDragOver: false,
       isProcessing: false,
       isDone: false,
@@ -503,6 +509,17 @@ export default {
         }
         wasmModule._free(sourcePtr);
         wasmModule._free(targetPtr);
+
+        // 备份原始像素，供“重新处理”时恢复（worker 会 transfer 走 buffer）
+        this.originalInputData = new Uint8ClampedArray(this.input.data);
+        this.originalHasAlpha = this.hasAlpha;
+        if (this.hasAlpha) {
+          this.originalInputAlphaData = new Uint8ClampedArray(
+            this.inputAlpha.data
+          );
+        } else {
+          this.originalInputAlphaData = null;
+        }
 
         const canvas = this.$refs.canvas;
         const containerWidth = canvas.width;
@@ -832,7 +849,7 @@ export default {
               new Uint8ClampedArray(output)
             );
           }
-          this.info = "Processing Image...";
+          this.info = "正在合成结果…";
           if (this.inputAlpha) {
             worker.postMessage(
               {
@@ -904,7 +921,7 @@ export default {
             this.$refs.dragLine.style.left =
               this.linePosition / this.dpr + "px";
             this.drawImage();
-            this.info = "Done! Time used: " + (Date.now() - start) / 1000 + "s";
+            this.info = "处理完成！用时 " + (Date.now() - start) / 1000 + " 秒";
           };
           this.isProcessing = false;
           this.isDone = true;
@@ -937,6 +954,38 @@ export default {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+    },
+    resetProcessing() {
+      // 终止旧 worker 并新建，避免使用已被 transfer 的 buffer
+      this.worker.terminate();
+      this.worker = new Worker(new URL("./worker.js", import.meta.url), {
+        type: "module",
+      });
+      if (!this.originalInputData) {
+        alert("未找到原图数据，请点左上角返回重新上传。");
+        return;
+      }
+      // 用备份的原始像素重建 input，使同一张图可再次处理
+      this.input = new Img(
+        this.img.width,
+        this.img.height,
+        new Uint8ClampedArray(this.originalInputData)
+      );
+      if (this.originalHasAlpha && this.originalInputAlphaData) {
+        this.inputAlpha = new Img(
+          this.img.width,
+          this.img.height,
+          new Uint8ClampedArray(this.originalInputAlphaData)
+        );
+      } else {
+        this.inputAlpha = null;
+      }
+      this.processedImg = new Image();
+      this.isDone = false;
+      this.isProcessing = false;
+      this.progress = 0;
+      this.info = "";
+      this.drawImage();
     },
     reloadPage() {
       this.worker.terminate();
